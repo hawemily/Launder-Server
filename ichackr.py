@@ -1,15 +1,17 @@
-import os, json, random, datetime
+import os, json, random, datetime, copy
 
 from flask import Flask, url_for, redirect, request, render_template, request, jsonify
 from random import seed, randint
+from copy import deepcopy
 
 app = Flask(__name__)
 #set of events, each one is a dict
-entries = {"eventid" : ["load", "color", "gender", 90, 234]}
-lss = [["eventId", "load", "color", "gender", 90, 234]]
+entries = {'1' : ["1/2", "dgaf", "female", 5000, 16920], '2' : ["1/4", "white", "male", 20000, 86372], 
+           '3' : ["3/4", "color", "male", 100, 4782]}
 
-ls = [[90, "load", "color", "gender", 90, 234]]
-userIdToName = {"userId" : "username"}
+# ls = [[90, "load", "color", "gender", 90, 234]]
+entryIdToName = {'0' : "JASON is a genius", '1' : "Stephen King's It", '3' : "adopted children"}
+ids = {"username" : "success"}
 
 @app.route('/create_match', methods=['POST'])
 def create_match():
@@ -18,46 +20,45 @@ def create_match():
     username = req_data['username']
     userStartTime = req_data['startTime']
     userEndTime = req_data['endTime']
-    userLoadSize = req_data['loadSize']
+    userLoad = req_data['load']
     userColor = req_data['color']
     userGender = req_data['gender']
     
-    # currentDT = datetime.datetime.now()
-    # seed(currentDT)
-    # r = randint(1,21)
-    # x = True
+    currentDT = datetime.datetime.now()
+    seed(currentDT)
+    r = randint(1,21)
+    x = True
 
-    # while x:
-    #     if r in userIdToName:
-    #         r = randint(1, 21)
-    #     else:
-    #         x = False
+    while x:
+        if r in entryIdToName:
+            r = randint(1, 21)
+        else:
+            x = False
         
-    # newEntry = [r, userLoadSize, userColor, userGender, userStartTime, userEndTime]
-    # userIdToName.update({r : username})
-    # ls.append(newEntry)
+    # newEntry = [userLoad, userColor, userGender, userStartTime, userEndTime]
+    # entryIdToName.update({r : username})
+    # ls.update({r : newEntry})
     return jsonify({})
     
 
 @app.route('/match_success/<eventId>')
 def match_success(eventId):
-    # username = userIdToName[eventId] 
-    # for entry in ls:
-    #     entry.pop(5)
-    #     entry.pop(4)
-    #     entry.pop(0)
-    # for entry in ls:
-    #     ls.append(username)
-    return jsonify({"success" : True})
+    entryId = int(eventId)
+    username = entryIdToName[entryId]
+    chosenOne = entries[entryId]
+    return json.dumps({"success" : True, username : chosenOne})
     #how the fuck do i change the app to another damn page
 
 @app.route('/match_failure')
 def match_failure():
-    # for entry in ls:
-    #     entry.pop(5)
-    #     entry.pop(4)
-    #     entry.pop(0)
-    return json.dumps({"success" : False})
+    arrayEntries = []
+    for key, value in entries.items():
+        valueCopy = []
+        for i in range(len(value)):
+            valueCopy[i] = value[i]
+        valueCopy.insert(0, key)
+        arrayEntries.append(valueCopy)
+    return json.dumps({"success" : False, "foreversingle" : arrayEntries})
 
 @app.route('/')
 def default():
@@ -73,7 +74,7 @@ def match():
     userStartTime = None
     userEndTime = None
     userColor = None
-    userLoadSize = None
+    userLoad = None
     userGender = None
 
     if 'startTime' in req_data:
@@ -86,24 +87,24 @@ def match():
         userLoad = req_data['load']
     if 'gender' in req_data:
         userGender = req_data['gender']
-    id = "dont"
-    for i in range(len(ls)):
-        startTime = ls[i][4]
-        endTime = ls[i][5]
-        id = ls[i][0]
+    
+    for entry, args in entries.items():
+        startTime = args[3]
+        endTime = args[4]
         maxStartTime = max(startTime, userStartTime)
         minEndTime = min(endTime, userEndTime)
         if maxStartTime < minEndTime:
-            load = ls[i][1]
-            color = ls[i][2]
-            gender = ls[i][3]
+            load = args[0]
+            color = args[1]
+            gender = args[2]
             if load == userLoad and color == userColor and gender == userGender:
-                ls.pop(i)
-                userIdToName.pop(id)
-                return redirect(url_for('match_success', eventId=id))
+                intEntry = int(entry)
+                entries.pop(intEntry)
+                entryIdToName.pop(intEntry)
+                return redirect(url_for('match_success', eventId=intEntry))
     
-    return redirect(url_for('match_success', eventId=id))
-    #return redirect()
+    return redirect(url_for('match_failure'))
+    #return redirect(url_for('match_success', eventId=id))
 
 if __name__ == "__main__":
     app.run(debug=True)
