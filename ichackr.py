@@ -54,9 +54,9 @@ def match_failure():
     arrayEntries = []
     for key, value in entries.items():
         valueCopy = []
+        valueCopy.append(key)
         for i in range(len(value)):
-            valueCopy[i] = value[i]
-        valueCopy.insert(0, key)
+            valueCopy.append(value[i])
         arrayEntries.append(valueCopy)
     return json.dumps({"success" : False, "foreversingle" : arrayEntries})
 
